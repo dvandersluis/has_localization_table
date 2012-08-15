@@ -1,7 +1,8 @@
-
 # HasLocalizationTable
 
 ActiveRecord plugin which adds setup and convenience methods for working with a relational localization table for user-driven data.
+
+Adds accessors to retrieve localized attributes using the current locale, in order to avoid having to collect the correct object each time a value is needed. Localized attribute values are also cached for the current locale.
 
 ## Installation
 
@@ -22,8 +23,31 @@ Or install it yourself as:
 The gem assumes that the localization table has already been migrated, and the model for it contains `belongs_to` associations for the locale table and the base table. You only need to call the `has_localization_table` method on the base model.
 
 	class Article < ActiveRecord::Base
+	  # assuming ArticleLocalizations has name and body columns
 	  has_localization_table :localizations, required: true, class_name: "ArticleLocalizations"
 	end
+	
+	# Localized attributes can be retrieved by accessor...
+	a = Article.new(name: "Once Upon a Time...", body: "There once lived a princess locked away in a tower!")
+	a.name # "Once Upon a Time..."
+	a.body # "There once lived a princess locked away in a tower!"
+	
+	# ... or set directly
+	a.name = "Sleeping Beauty"
+	
+	# After changing to a different locale
+	a.name = "Belle au Bois Dormant"
+	a.body = "Il était une fois une princesse enfermée dans une tour!"
+	
+	a.localizations
+	=> [<ArticleLocalization id: 1, article_id: 1, locale_id: 1, name: "Sleeping Beauty", body: "There once lived a princess locked away in a tower!">,
+	    <ArticleLocalization id: 2, article_id: 1, locale_id: 2, name: "Belle au Bois Dormant", body: "Il était une fois une princesse enfermée dans une tour!">]
+	    
+	# Finder and order convenience methods are also provided:
+	Article.find_by_name("Snow White")
+	Article.find_by_body("...")
+	Article.find_by_name_and_body("...", "...")
+	Article.ordered_by_name # uses Arel, so it can be chained with other finder methods
 
 ### `has_localization_table` Arguments
 If given, the first argument is the name used for the association, otherwise it defaults to `strings`.
