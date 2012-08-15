@@ -19,7 +19,7 @@ module HasLocalizationTable
       association_name = options.delete(:association_name) || :strings
       
       # If class_name isn't explicitly defined, try adding String onto the current class name
-      options[:class_name] = klass.name + "String" if options[:class_name].blank? and Object.const_defined?(klass.name + "String")      
+      options[:class_name] = klass.name + "String" if options[:class_name].blank? and (Module.const_get(klass.name + "String") rescue false)
       
       # Define the association
       klass.has_many association_name, options.except(:required, :optional)
