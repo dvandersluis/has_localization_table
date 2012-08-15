@@ -158,7 +158,6 @@ module HasLocalizationTable
     # Both strings and the associations are memoized, so that if an association adds more than one attribute to the main model, the association doesn't need 
     # to be loaded each time a different attribute is accessed.
     def get_cached_localized_attribute(locale, association, attribute)
-      puts "get_cached_localized_attribute(#{locale.inspect}, #{association}, #{attribute})"
       @_localized_attribute_cache ||= {}
       @_localized_attribute_cache[attribute] ||= {}
 
