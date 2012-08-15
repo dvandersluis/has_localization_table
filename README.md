@@ -52,21 +52,37 @@ The gem assumes that the localization table has already been migrated, and the m
 ### `has_localization_table` Arguments
 If given, the first argument is the name used for the association, otherwise it defaults to `strings`.
 
-* `class_name` (default: base class name + "Strings"; ie. `ArticleStrings`) - the name of the localization class.
+* `class_name` (default: base class name + class_suffix) - the name of the localization class.
 * `required` (default: false) - if true, at least a localization object for the primary language (see Configuration section) must be present or validation will fail
 * `optional` (default: []) - if `required` is true, can be used to specify that specific attributes are optional
 
 Any options that can be passed into `has_many` can also be passed along and will be used when creating the association.
 	
 ## Configuration
-`HasLocalizationTable` can also be configured as follows:
+`HasLocalizationTable` can also be configured as follows. Note that if any configuration option responds to `call`, it will be called.
 
 	HasLocalizationTable.configure do |config|
+	  # Default suffix to use for Localization class names
+	  # ie. Article -> ArticleLocalization
+	  config.class_suffix = "Localization"
+	  
+	  # Default localizations association name
+      config.default_association_name = :localizations
+      
+      # Class name for Locale objects
 	  config.locale_class = "Locale"
-	  config.locale_foreign_key = "locale_id"
-	  config.primary_locale = Locale.primary_language
-	  config.current_locale = Locale.current_language
-	  config.all_locales = Locale.all
+	  
+	  # Foreign key used in localization tables to relate to a Locale
+      config.locale_foreign_key = "locale_id"
+      
+      # Primary (main) locale
+	  config.primary_locale = ->{ Locale.primary_language }
+	  
+	  # Current locale
+	  config.current_locale = ->{ Locale.current_language }
+	  
+	  # All available locales
+	  config.all_locales = ->{ Locale.all }
 	end
 
 ## Contributing

@@ -25,12 +25,16 @@ module HasLocalizationTable
     config_accessor :primary_locale
     config_accessor :current_locale
     config_accessor :all_locales
+    config_accessor :class_suffix
+    config_accessor :default_association_name
   end
 
   # this is ugly. why can't we pass the default value to config_accessor...?
   configure do |config|
     config.locale_class = "Locale"
     config.locale_foreign_key = "locale_id"
+    config.class_suffix = "Localization"
+    config.default_association_name = :localizations
     config.primary_locale = ->{ config.locale_class.constantize.first }
     config.current_locale = ->{ config.locale_class.constantize.first }
     config.all_locales = ->{ config.locale_class.constantize.all }

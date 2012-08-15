@@ -1,98 +1,49 @@
 module HasLocalizationTable
   module ClassMethods
     def self.extended(klass)
-      options = { dependent: :delete_all }.merge(klass.localization_table_options)
-      
-      association_name = options.delete(:association_name) || :strings
-      
-      # If class_name isn't explicitly defined, try adding String onto the current class name
-      options[:class_name] = klass.name + "String" if options[:class_name].blank? and (Module.const_get(klass.name + "String") rescue false)
-      
-      # Define the association
-      klass.has_many association_name, options.except(:required, :optional)
-      association = klass.reflect_on_association(association_name)
-      
       klass.class_eval do
+        create_localization_association!
+        
         # Initialize string records after main record initialization
         after_initialize do
-          build_missing_strings
+          build_missing_localizations!
         end
         
         before_validation do
-          reject_empty_strings
-          build_missing_strings
+          reject_empty_localizations!
+          build_missing_localizations!
         end
         
         # Reject any blank strings before saving the record
         # Validation will have happened by this point, so if there is a required string that is needed, it won't be rejected
         before_save do
-          reject_empty_strings
+          reject_empty_localizations!
         end
         
         # Add validation to ensure a string for the primary locale exists if the string is required
         validate do
-          if self.class.localization_table_options[:required] || false
-            errors.add(association_name, :primary_lang_string_required) unless send(association_name).any? do |string|
-              string.send(HasLocalizationTable.config.locale_foreign_key) == HasLocalizationTable.primary_locale.id
+          if localization_table_options[:required] || false
+            errors.add(localization_association_name, :primary_lang_string_required) unless localization_association.any? do |string|
+              string.send(HasLocalizationTable.locale_foreign_key) == HasLocalizationTable.primary_locale.id
             end
           end
         end
-        
-        define_method :build_missing_strings do
-          locale_ids = HasLocalizationTable.all_locales.map(&:id)
-          HasLocalizationTable.all_locales.each do |l|
-            send(association_name).build(HasLocalizationTable.config.locale_foreign_key => l.id) unless send(association_name).detect{ |str| str.send(HasLocalizationTable.config.locale_foreign_key) == l.id }
-            send(association_name).sort_by!{ |s| locale_ids.index(s.send(HasLocalizationTable.config.locale_foreign_key)) || 0 }
-          end
-        end
-        private :build_missing_strings
-        
-        define_method :reject_empty_strings do
-          send(association_name).reject! { |s| !s.persisted? and self.class.localized_attributes.all?{ |attr| s.send(attr).blank? } }
-        end
-        private :reject_empty_strings
-        
-        # Find a record by multiple string values
-        define_singleton_method :find_by_localized_attributes do |attributes, locale = HasLocalizationTable.current_locale|
-          string_record = association.klass.where({ HasLocalizationTable.config.locale_foreign_key => locale.id }.merge(attributes)).first
-          string_record.send(klass.to_s.underscore.to_sym) rescue nil
-        end
-        private_class_method :find_by_localized_attributes
       end
       
       klass.localized_attributes.each do |attribute|
         # Add validation to make all string fields required for the primary locale
-        association.klass.class_eval do
+        klass.send(:localization_class).class_eval do
           validates attribute, presence: { message: :custom_this_field_is_required },
-            if: proc { |model| klass.name.constantize.localized_attribute_required?(attribute) && model.send(HasLocalizationTable.config.locale_foreign_key) == HasLocalizationTable.current_locale.id }
-        end
-      
-        # Set up accessors and ordering named_scopes for each non-FK attribute on the base model
-        klass.class_eval do
-          define_method attribute do |locale = HasLocalizationTable.current_locale|
-            # Try to load a string for the given locale
-            # If that fails, try for the primary locale
-            read_localized_attribute(locale, association_name, attribute) || read_localized_attribute(HasLocalizationTable.primary_locale, association_name, attribute)
-          end
-          
-          define_method "#{attribute}=" do |value|
-            write_localized_attribute(HasLocalizationTable.current_locale, association_name, attribute, value)
-          end
-          
-          define_singleton_method "ordered_by_#{attribute}" do |direction = :asc|
-            direction = direction == :asc ? "ASC" : "DESC"
-            
-            joins(%{
-              LEFT OUTER JOIN #{association.table_name}
-                ON #{association.table_name}.#{association.foreign_key} = #{self.table_name}.#{self.primary_key}
-                  AND #{association.table_name}.#{HasLocalizationTable.config.locale_foreign_key} = %d
-              } % HasLocalizationTable.current_locale.id
-            ).
-            order( "#{association.table_name}.#{attribute} #{direction}")
-            #order{ Squeel::Nodes::Order.new(Squeel::Nodes::Stub.new(association.table_name).send(attribute), direction) }
-          end
+            if: proc { |model| klass.name.constantize.localized_attribute_required?(attribute) && model.send(HasLocalizationTable.locale_foreign_key) == HasLocalizationTable.current_locale.id }
         end
       end
+      
+      # Alias the scoping method to use the actual association name
+      alias_method :"with_#{klass.localization_association_name}", :with_localizations
+    end
+    
+    def localization_association_name
+      localization_table_options[:association_name]
     end
     
     def localized_attributes
@@ -120,11 +71,14 @@ module HasLocalizationTable
     def method_missing(name, *args, &block)
       if name.to_s =~ /\Afind_by_([a-z0-9_]+(_and_[a-z0-9_]+)*)\Z/
         attributes = $1.split("_and_").map(&:to_sym)
-        if (attributes & localized_attributes).size == attributes.size and args.size == attributes.size
-          raise ArgumentError, "expected #{attributes.size} #{"argument".pluralize(attributes.size)}" unless args.size == attributes.size
+        if (attributes & localized_attributes).size == attributes.size
+          raise ArgumentError, "expected #{attributes.size} #{"argument".pluralize(attributes.size)}: #{attributes.join(", ")}" unless args.size == attributes.size
           args = attributes.zip(args).inject({}) { |memo, (key, val)| memo[key] = val; memo }
           return find_by_localized_attributes(args)
         end
+      elsif name.to_s =~ /\Aordered_by_([a-z0-9_]+)\Z/
+        attribute = $1.to_sym
+        return ordered_by_localized_attribute(attribute, *args) if localized_attributes.include?(attribute)
       end
       
       super
@@ -133,10 +87,35 @@ module HasLocalizationTable
     def respond_to?(*args)
       if args.first.to_s =~ /\Afind_by_([a-z0-9_]+(_and_[a-z0-9_]+)*)\Z/
         attributes = $1.split("_and_").map(&:to_sym)
-        return ((attributes & localized_attributes).size == attributes.size)
+        return true if (attributes & localized_attributes).size == attributes.size
+      elsif name.to_s =~ /\Aordered_by_([a-z0-9_]+)\Z/
+        return true if localized_attributes.include?($1.to_sym)
       end
       
       super
+    end
+    
+    def with_localizations
+      scoped.joins((<<-eoq % HasLocalizationTable.current_locale.id).gsub(/\s+/, " "))
+        LEFT OUTER JOIN #{localization_class.table_name}
+          ON #{localization_class.table_name}.#{self.name.underscore}_id = #{self.table_name}.#{self.primary_key}
+          AND #{localization_class.table_name}.#{HasLocalizationTable.locale_foreign_key} = %d
+      eoq
+    end
+    
+  private
+    def create_localization_association!
+      self.has_many localization_association_name, localization_table_options.except(:association_name, :required, :optional)
+    end
+    
+    # Find a record by multiple localization values
+    def find_by_localized_attributes(attributes, locale = HasLocalizationTable.current_locale)
+      with_localizations.where(localization_class.table_name => attributes).first
+    end
+    
+    # Order records by localization value
+    def ordered_by_localized_attribute(attribute, asc = true, locale = HasLocalizationTable.current_locale)
+      with_localizations.order("#{localization_class.table_name}.#{attribute} #{asc ? "ASC" : "DESC"}")
     end
   end
 end

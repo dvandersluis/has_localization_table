@@ -11,7 +11,7 @@ ActiveRecord::Migration.tap do |m|
     t.string :name
   end
 
-  m.create_table :article_strings do |t|
+  m.create_table :article_localizations do |t|
     t.integer :article_id
     t.integer :locale_id
     t.string :name
@@ -24,7 +24,7 @@ Locale = Class.new(ActiveRecord::Base)
 Locale.create!(name: "English")
 Locale.create!(name: "French")
 
-ArticleString = Class.new(ActiveRecord::Base) do
+ArticleLocalization = Class.new(ActiveRecord::Base) do
   belongs_to :article
   belongs_to :locale
 end
@@ -46,33 +46,33 @@ describe HasLocalizationTable do
     end
     
     it "should track any given options" do
-      Article.has_localization_table :localizations, required: true, optional: [:description]
-      Article.localization_table_options.must_equal({ association_name: :localizations, required: true, optional: [:description] })
+      Article.has_localization_table :strings, required: true, optional: [:description]
+      Article.localization_table_options.slice(:association_name, :required, :optional).must_equal({ association_name: :strings, required: true, optional: [:description] })
     end
     
-    it "should define has_many association on the base class with a default name of :strings" do
+    it "should define has_many association on the base class with a default name of :localizations" do
       Article.has_localization_table
-      assoc = Article.reflect_on_association(:strings)
-      assoc.wont_be_nil
-      assoc.macro.must_equal :has_many
-      assoc.klass.must_equal ArticleString
-    end
-    
-    it "should use the given association name" do
-      Article.has_localization_table :localizations
       assoc = Article.reflect_on_association(:localizations)
       assoc.wont_be_nil
       assoc.macro.must_equal :has_many
-      assoc.klass.must_equal ArticleString
+      assoc.klass.must_equal ArticleLocalization
     end
     
-    it "should use the given class" do
-      ArticleText = Class.new(ArticleString)
-      Article.has_localization_table class_name: ArticleText
+    it "should use the given association name" do
+      Article.has_localization_table :strings
       assoc = Article.reflect_on_association(:strings)
       assoc.wont_be_nil
       assoc.macro.must_equal :has_many
-      assoc.klass.name.must_equal "ArticleText"
+      assoc.klass.must_equal ArticleLocalization
+    end
+    
+    it "should use the given class" do
+      ArticleText = Class.new(ArticleLocalization)
+      Article.has_localization_table class_name: ArticleText
+      assoc = Article.reflect_on_association(:localizations)
+      assoc.wont_be_nil
+      assoc.macro.must_equal :has_many
+      assoc.klass.must_equal ArticleText
       
       Object.send(:remove_const, :ArticleText)
     end
@@ -81,10 +81,10 @@ describe HasLocalizationTable do
       Article.has_localization_table required: true
       a = Article.new
       refute a.valid?
-      a.errors[:strings].wont_be_empty
+      a.errors[:localizations].wont_be_empty
       
       a = Article.new(description: "Wishing the world hello!")
-      s = a.strings.first
+      s = a.localizations.first
       refute s.valid?
       s.errors[:name].wont_be_empty
     end
@@ -92,11 +92,11 @@ describe HasLocalizationTable do
     it "should not add validations if given required: false" do
       Article.has_localization_table required: false
       a = Article.new
-      a.valid? or raise a.strings.map(&:errors).inspect
-      a.errors[:strings].must_be_empty
+      a.valid? or raise a.localizations.map(&:errors).inspect
+      a.errors[:localizations].must_be_empty
       
       a = Article.new(description: "Wishing the world hello!")
-      s = a.strings.first
+      s = a.localizations.first
       assert s.valid?
       s.errors[:name].must_be_empty
     end
@@ -105,10 +105,10 @@ describe HasLocalizationTable do
       Article.has_localization_table
       a = Article.new
       assert a.valid?
-      a.errors[:strings].must_be_empty
+      a.errors[:localizations].must_be_empty
       
       a = Article.new(description: "Wishing the world hello!")
-      s = a.strings.first
+      s = a.localizations.first
       assert s.valid?
       s.errors[:name].must_be_empty
     end
@@ -117,8 +117,8 @@ describe HasLocalizationTable do
       Article.has_localization_table required: true, optional: [:description]
       a = Article.new(name: "Test")
       assert a.valid?
-      a.errors[:strings].must_be_empty
-      assert a.strings.all?{ |s| s.errors[:description].empty? }
+      a.errors[:localizations].must_be_empty
+      assert a.localizations.all?{ |s| s.errors[:description].empty? }
     end
   end
   
@@ -132,8 +132,8 @@ describe HasLocalizationTable do
     let(:a) { Article.new(name: "Test", description: "Description") }
     
     it "should set localized attributes" do
-      a.strings.first.name.must_equal "Test"
-      a.strings.first.description.must_equal "Description"
+      a.localizations.first.name.must_equal "Test"
+      a.localizations.first.description.must_equal "Description"
     end
     
     it "should create accessor methods" do
@@ -153,8 +153,8 @@ describe HasLocalizationTable do
       a.description = "Changed Description"
       a.name.must_equal "Changed"
       a.description.must_equal "Changed Description"
-      a.strings.first.name.must_equal "Changed"
-      a.strings.first.description.must_equal "Changed Description"
+      a.localizations.first.name.must_equal "Changed"
+      a.localizations.first.description.must_equal "Changed Description"
     end
     
     it "should use the current locale when setting" do
@@ -167,8 +167,8 @@ describe HasLocalizationTable do
       a.name = "French Name"
       a.description = "French Description"
       
-      eng = a.strings.detect{ |s| s.locale_id == Locale.first.id }
-      fre = a.strings.detect{ |s| s.locale_id == Locale.last.id }
+      eng = a.localizations.detect{ |s| s.locale_id == Locale.first.id }
+      fre = a.localizations.detect{ |s| s.locale_id == Locale.last.id }
       
       eng.name.must_equal "Test"
       eng.description.must_equal "Description"
