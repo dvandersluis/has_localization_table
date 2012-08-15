@@ -42,7 +42,7 @@ module HasLocalizationTable
           reject_empty_strings
         end
         
-        # Add validation to ensure a string for the primary language exists if the string is required
+        # Add validation to ensure a string for the primary locale exists if the string is required
         validate do
           if self.class.localization_table_options[:required] || false
             errors.add(association_name, :primary_lang_string_required) unless send(association_name).any? do |string|
@@ -66,15 +66,15 @@ module HasLocalizationTable
         private :reject_empty_strings
         
         # Find a record by multiple string values
-        define_singleton_method :find_by_localized_attributes do |attributes, language = HasLocalizationTable.current_locale|
-          string_record = association.klass.where({ HasLocalizationTable.config.locale_foreign_key => language.id }.merge(attributes)).first
+        define_singleton_method :find_by_localized_attributes do |attributes, locale = HasLocalizationTable.current_locale|
+          string_record = association.klass.where({ HasLocalizationTable.config.locale_foreign_key => locale.id }.merge(attributes)).first
           string_record.send(klass.to_s.underscore.to_sym) rescue nil
         end
         private_class_method :find_by_localized_attributes
       end
       
       klass.localized_attributes.each do |attribute|
-        # Add validation to make all string fields required for the primary language
+        # Add validation to make all string fields required for the primary locale
         association.klass.class_eval do
           validates attribute, presence: { message: :custom_this_field_is_required },
             if: proc { |model| klass.name.constantize.localized_attribute_required?(attribute) && model.send(HasLocalizationTable.config.locale_foreign_key) == HasLocalizationTable.current_locale.id }
@@ -82,14 +82,14 @@ module HasLocalizationTable
       
         # Set up accessors and ordering named_scopes for each non-FK attribute on the base model
         klass.class_eval do
-          define_method attribute do |language = HasLocalizationTable.current_locale|
-            # Try to load a string for the given language
-            # If that fails, try for the primary language
-            get_memoized_string(language, association_name, attribute) || get_memoized_string(HasLocalizationTable.primary_locale, association_name, attribute)
+          define_method attribute do |locale = HasLocalizationTable.current_locale|
+            # Try to load a string for the given locale
+            # If that fails, try for the primary locale
+            get_cached_localized_attribute(locale, association_name, attribute) || get_cached_localized_attribute(HasLocalizationTable.primary_locale, association_name, attribute)
           end
           
           define_method "#{attribute}=" do |value|
-            set_memoized_string(HasLocalizationTable.current_locale, association_name, attribute, value)
+            cache_localized_attribute(HasLocalizationTable.current_locale, association_name, attribute, value)
           end
           
           define_singleton_method "ordered_by_#{attribute}" do |direction = :asc|
@@ -157,29 +157,30 @@ module HasLocalizationTable
   private
     # Both strings and the associations are memoized, so that if an association adds more than one attribute to the main model, the association doesn't need 
     # to be loaded each time a different attribute is accessed.
-    def get_memoized_string(language, association, attribute)
+    def get_cached_localized_attribute(locale, association, attribute)
+      puts "get_cached_localized_attribute(#{locale.inspect}, #{association}, #{attribute})"
       @_localized_attribute_cache ||= {}
       @_localized_attribute_cache[attribute] ||= {}
 
       @_localized_association_cache ||= {}
       @_localized_association_cache[association] ||= {}
     
-      @_localized_attribute_cache[attribute][language.id] ||= begin
-        @_localized_association_cache[association][language.id] ||= (send(association).where{ HasLocalizationTable.config.locale_foreign_key == language.id }.first || send(association).detect{ |a| a.send(HasLocalizationTable.config.locale_foreign_key) == language.id })
-        s = @_localized_association_cache[association][language.id].send(attribute) rescue nil
+      @_localized_attribute_cache[attribute][locale.id] ||= begin
+        @_localized_association_cache[association][locale.id] ||= send(association).detect{ |a| a.send(HasLocalizationTable.config.locale_foreign_key) == locale.id }
+        s = @_localized_association_cache[association][locale.id].send(attribute) rescue nil
         s.blank? ? nil : s
       end
     end
     
-    def set_memoized_string(language, association, attribute, value)
-      string = send(association).detect{ |a| a.send(HasLocalizationTable.config.locale_foreign_key) == language.id } || send(association).build(HasLocalizationTable.config.locale_foreign_key => language.id)
+    def cache_localized_attribute(locale, association, attribute, value)
+      string = send(association).detect{ |a| a.send(HasLocalizationTable.config.locale_foreign_key) == locale.id } || send(association).build(HasLocalizationTable.config.locale_foreign_key => locale.id)
       value = value.to_s
       
       string.send(:"#{attribute}=", value)
       
       @_localized_attribute_cache ||= {}
       @_localized_attribute_cache[attribute] ||= {}
-      @_localized_attribute_cache[attribute][language.id] = value.blank? ? nil : value
+      @_localized_attribute_cache[attribute][locale.id] = value.blank? ? nil : value
     end
   end
 end
