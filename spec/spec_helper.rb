@@ -1,6 +1,7 @@
 require 'minitest/autorun'
 require 'active_record'
 require 'has_localization_table'
+require 'support/setup'
 
 class MiniTest::Spec
   def run(*args, &block)

@@ -1,34 +1,5 @@
 require 'spec_helper'
 
-# Setup in-memory database so AR can work
-ActiveRecord::Base.establish_connection adapter: "sqlite3", database: ":memory:"
-ActiveRecord::Migration.tap do |m|
-  m.create_table :articles do |t|
-    t.timestamps
-  end
-
-  m.create_table :locales do |t|
-    t.string :name
-  end
-
-  m.create_table :article_localizations do |t|
-    t.integer :article_id
-    t.integer :locale_id
-    t.string :name
-    t.string :description
-  end
-end
-
-# Set up locales
-Locale = Class.new(ActiveRecord::Base)
-Locale.create!(name: "English")
-Locale.create!(name: "French")
-
-ArticleLocalization = Class.new(ActiveRecord::Base) do
-  belongs_to :article
-  belongs_to :locale
-end
-
 describe HasLocalizationTable do
   before do
     # Configure HLT
@@ -119,80 +90,6 @@ describe HasLocalizationTable do
       assert a.valid?
       a.errors[:localizations].must_be_empty
       assert a.localizations.all?{ |s| s.errors[:description].empty? }
-    end
-  end
-  
-  describe "other methods" do
-    before do
-      Object.send(:remove_const, :Article) rescue nil
-      Article = Class.new(ActiveRecord::Base)
-      Article.has_localization_table
-    end
-    
-    let(:a) { Article.new(name: "Test", description: "Description") }
-    
-    it "should set localized attributes" do
-      a.localizations.first.name.must_equal "Test"
-      a.localizations.first.description.must_equal "Description"
-    end
-    
-    it "should create accessor methods" do
-      a.name.must_equal "Test"
-      a.description.must_equal "Description"
-    end
-    
-    it "should save localized attributes" do
-      a.save!
-      a.reload
-      a.name.must_equal "Test"
-      a.description.must_equal "Description"
-    end
-    
-    it "should create mutator methods" do
-      a.name = "Changed"
-      a.description = "Changed Description"
-      a.name.must_equal "Changed"
-      a.description.must_equal "Changed Description"
-      a.localizations.first.name.must_equal "Changed"
-      a.localizations.first.description.must_equal "Changed Description"
-    end
-    
-    it "should use the current locale when setting" do
-      a
-      
-      HasLocalizationTable.configure do |c|
-        c.current_locale = Locale.last
-      end
-      
-      a.name = "French Name"
-      a.description = "French Description"
-      
-      eng = a.localizations.detect{ |s| s.locale_id == Locale.first.id }
-      fre = a.localizations.detect{ |s| s.locale_id == Locale.last.id }
-      
-      eng.name.must_equal "Test"
-      eng.description.must_equal "Description"
-      fre.name.must_equal "French Name"
-      fre.description.must_equal "French Description"
-    end
-    
-    it "should create finder methods" do
-      a.save!
-      Article.find_by_name("Test").must_equal a
-      Article.find_by_description("Description").must_equal a
-      Article.find_by_name_and_description("Test", "Description").must_equal a
-      Article.find_by_description_and_name("Description", "Test").must_equal a
-      
-      Article.find_by_name("Wrong").must_be_nil
-      Article.find_by_description("Wrong").must_be_nil
-    end
-    
-    it "should create ordered_by methods" do
-      a.save!
-      b = Article.create!(name: "Name", description: "Another Description")
-      c = Article.create!(name: "Once Upon a Time...", description: "Fairytale")
-      Article.ordered_by_name.must_equal [b, c, a]
-      Article.ordered_by_description.must_equal [b, a, c]
     end
   end
 end
