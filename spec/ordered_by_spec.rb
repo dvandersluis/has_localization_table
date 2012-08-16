@@ -24,4 +24,11 @@ describe HasLocalizationTable do
     Article.ordered_by_description.must_equal [b, a, c]
     Article.ordered_by_name(false).must_equal [a, c, b]
   end
+  
+  it "should allow ordered_by methods to apply to scope chains" do
+    a.save!
+    b = Article.create!(name: "Name", description: "Another Description")
+    c = Article.create!(name: "Once Upon a Time...", description: "Fairytale")
+    Article.scoped.ordered_by_name.must_equal [b, c, a]
+  end
 end

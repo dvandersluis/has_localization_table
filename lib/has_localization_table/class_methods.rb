@@ -92,7 +92,7 @@ module HasLocalizationTable
       if args.first.to_s =~ /\Afind_by_([a-z0-9_]+(_and_[a-z0-9_]+)*)\Z/
         attributes = $1.split("_and_").map(&:to_sym)
         return true if (attributes & localized_attributes).size == attributes.size
-      elsif name.to_s =~ /\Aordered_by_([a-z0-9_]+)\Z/
+      elsif args.first.to_s =~ /\Aordered_by_([a-z0-9_]+)\Z/
         return true if localized_attributes.include?($1.to_sym)
       end
       
