@@ -14,6 +14,7 @@ describe HasLocalizationTable do
     Article = Class.new(ActiveRecord::Base) do
       def self.localization_association_name; :strings; end
       def self.localization_table_options; {}; end
+      def self.localization_class; ArticleLocalization; end
     end
   end
 
@@ -45,13 +46,13 @@ describe HasLocalizationTable do
     conditions = subject.reflect_on_association(:string).options[:conditions]
 
     HasLocalizationTable.stub :current_locale, locale do
-      conditions.call.must_equal "locale_id = 2"
+      conditions.call.must_equal "article_localizations.locale_id = 2"
     end
 
     locale.expect :id, 3
 
     HasLocalizationTable.stub :current_locale, locale do
-      conditions.call.must_equal "locale_id = 3"
+      conditions.call.must_equal "article_localizations.locale_id = 3"
     end
   end
 end
