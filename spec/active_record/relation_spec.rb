@@ -42,8 +42,16 @@ describe HasLocalizationTable do
     locale = MiniTest::Mock.new
     locale.expect :id, 2
 
+    conditions = subject.reflect_on_association(:string).options[:conditions]
+
     HasLocalizationTable.stub :current_locale, locale do
-      subject.reflect_on_association(:string).options[:conditions].must_equal "locale_id = 2"
+      conditions.call.must_equal "locale_id = 2"
+    end
+
+    locale.expect :id, 3
+
+    HasLocalizationTable.stub :current_locale, locale do
+      conditions.call.must_equal "locale_id = 3"
     end
   end
 end
