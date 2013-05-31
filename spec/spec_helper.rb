@@ -1,3 +1,4 @@
+gem "minitest" # Use the gem version
 require 'minitest/autorun'
 require 'active_record'
 require 'has_localization_table'

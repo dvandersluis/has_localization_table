@@ -13,7 +13,7 @@ describe HasLocalizationTable do
     Article = Class.new(ActiveRecord::Base)
     Article.has_localization_table
   end
-  
+
   let(:a) { Article.new(name: "Test", description: "Description") }
   
   it "should set localized attributes" do

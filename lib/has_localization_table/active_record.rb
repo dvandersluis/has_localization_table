@@ -19,7 +19,6 @@ module HasLocalizationTable
       extend Relation, FinderMethods, OrderedBy, Callbacks, Validations, MetaMethods
       include Attributes
       
-      create_localization_association!
       setup_localization_callbacks!
       setup_localization_validations!
     end
