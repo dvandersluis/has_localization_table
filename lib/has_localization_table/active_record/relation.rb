@@ -29,7 +29,7 @@ module HasLocalizationTable
       # Collect the localization for the current locale
       def create_has_one_association
         has_one_options = localization_table_options.except(:association_name, :required, :optional, :dependent).
-          merge({conditions: -> { "#{HasLocalizationTable.locale_foreign_key} = #{HasLocalizationTable.current_locale.id}"} })
+          merge({ conditions: Proc.new { "#{HasLocalizationTable.locale_foreign_key} = #{HasLocalizationTable.current_locale.id}"} })
         self.has_one localization_association_name.to_s.singularize.to_sym, has_one_options
       end
 
