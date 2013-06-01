@@ -23,23 +23,30 @@ module HasLocalizationTable
 
       def create_localization_associations!
         create_has_many_association
-        create_has_one_association
+
+        # if caller explicitly asked not to create a has_one association, there's nothing more to do
+        return unless localization_table_options.fetch(:has_one, true)
+
+        create_has_one_association if localization_table_options[:has_one] or HasLocalizationTable.create_has_one_by_default
       end
 
       # Collect the localization for the current locale
       def create_has_one_association
         table_name = localization_class.table_name
         foreign_key = HasLocalizationTable.locale_foreign_key
+        association_name = localization_association_name.to_s.singularize.to_sym
+        association_name = :localization if localized_attributes.include?(association_name)
 
-        has_one_options = localization_table_options.except(:association_name, :required, :optional, :dependent).
+        has_one_options = localization_table_options.except(:association_name, :required, :optional, :dependent, :has_one).
           merge({ conditions: Proc.new { "#{table_name}.#{foreign_key} = #{HasLocalizationTable.current_locale.id}"} })
 
-        self.has_one localization_association_name.to_s.singularize.to_sym, has_one_options
+        self.has_one association_name, has_one_options
+        self.has_one(:localization, has_one_options) unless association_name == :localization
       end
 
       # Collect all localizations for the object
       def create_has_many_association
-        self.has_many localization_association_name, localization_table_options.except(:association_name, :required, :optional)
+        self.has_many localization_association_name, localization_table_options.except(:association_name, :required, :optional, :has_one)
       end
 
     public

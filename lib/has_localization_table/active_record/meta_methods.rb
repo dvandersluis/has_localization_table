@@ -14,7 +14,7 @@ module HasLocalizationTable
       end
       
       def localized_attributes
-        # Determine which attributes of the association model should be accessable through the base class
+        # Determine which attributes of the association model should be accessible through the base class
         # ie. everything that's not a primary key, foreign key, or timestamp attribute
         association_name = self.localization_table_options[:association_name] || :strings
         association = reflect_on_association(association_name)

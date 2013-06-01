@@ -15,6 +15,7 @@ describe HasLocalizationTable do
       def self.localization_association_name; :strings; end
       def self.localization_table_options; {}; end
       def self.localization_class; ArticleLocalization; end
+      def self.localized_attributes; []; end
     end
   end
 
@@ -37,6 +38,41 @@ describe HasLocalizationTable do
     reflection = subject.reflect_on_association(:string)
     refute_nil reflection
     reflection.macro.must_equal :has_one
+  end
+
+  it "should alias the has_one association as localization" do
+    reflection = subject.reflect_on_association(:localization)
+    refute_nil reflection
+    reflection.macro.must_equal :has_one
+  end
+
+  it "should not create a has_one association if disabled in configuration" do
+    HasLocalizationTable.stub :create_has_one_by_default, false do
+      assert_nil subject.reflect_on_association(:localization)
+    end
+  end
+
+  it "should not create a has_one association if disabled in table options" do
+    Article.stub :localization_table_options, { has_one: false } do
+      assert_nil subject.reflect_on_association(:localization)
+    end
+  end
+
+  it "should create a has_one association if asked for, even if disabled in configuration" do
+    HasLocalizationTable.stub :create_has_one_by_default, false do
+      Article.stub :localization_table_options, { has_one: true } do
+        reflection = subject.reflect_on_association(:localization)
+        refute_nil reflection
+        reflection.macro.must_equal :has_one
+      end
+    end
+  end
+
+  it "should not create an association that conflicts with an attribute name" do
+    Article.stub :localized_attributes, [:string] do
+      Article.send(:extend, HasLocalizationTable::ActiveRecord::Relation)
+      assert_nil Article.reflect_on_association(:string)
+    end
   end
 
   it "should use the current locale for the has_one association" do
