@@ -9,12 +9,12 @@ module HasLocalizationTable
         alias_method :"with_#{klass.localization_association_name}", :with_localizations
       end
       
-      def with_localizations
+      def with_localizations(locale = HasLocalizationTable.current_locale.id)
         lcat = localization_class.arel_table
         
         scoped.joins(
           arel_table.join(lcat, Arel::Nodes::OuterJoin).
-            on(lcat[:"#{self.name.underscore}_id"].eq(arel_table[self.primary_key]).and(lcat[HasLocalizationTable.locale_foreign_key].eq(HasLocalizationTable.current_locale.id))).
+            on(lcat[:"#{self.name.underscore}_id"].eq(arel_table[self.primary_key]).and(lcat[HasLocalizationTable.locale_foreign_key].eq(locale))).
             join_sql
         )
       end
@@ -46,7 +46,12 @@ module HasLocalizationTable
 
       # Collect all localizations for the object
       def create_has_many_association
-        self.has_many localization_association_name, localization_table_options.except(:association_name, :required, :optional, :has_one)
+        self.has_many localization_association_name, localization_table_options.except(:association_name, :required, :optional, :has_one) do
+          def for_locale(locale)
+            # where(HasLocalizationTable.locale_foreign_key => locale).first
+            select{ |s| s.send(HasLocalizationTable.locale_foreign_key) == locale }.first
+          end
+        end
       end
 
     public
