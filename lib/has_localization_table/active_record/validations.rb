@@ -13,7 +13,7 @@ module HasLocalizationTable
         
         # Add validation to ensure a string for the primary locale exists if the string is required
         validate do
-          if localization_table_options[:required] || false
+          if localization_table_options.fetch(:required, false)
             errors.add(localization_association_name, :primary_lang_string_required) unless localization_association.any? do |string|
               string.send(HasLocalizationTable.locale_foreign_key) == HasLocalizationTable.primary_locale.id
             end

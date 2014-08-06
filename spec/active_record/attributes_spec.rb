@@ -32,6 +32,12 @@ describe HasLocalizationTable do
     a.name.must_equal "Test"
     a.description.must_equal "Description"
   end
+
+  it "should save with update_attributes" do
+    a.save!
+    a.update_attributes!(name: "Test 2")
+    Article.find(a.id).name.must_equal "Test 2"
+  end
   
   it "should create mutator methods" do
     a.name = "Changed"

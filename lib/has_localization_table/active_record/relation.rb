@@ -46,7 +46,7 @@ module HasLocalizationTable
 
       # Collect all localizations for the object
       def create_has_many_association
-        self.has_many localization_association_name, localization_table_options.except(:association_name, :required, :optional, :has_one) do
+        self.has_many localization_association_name, localization_table_options.except(:association_name, :required, :optional, :has_one).reverse_merge(autosave: true) do
           def for_locale(locale)
             # where(HasLocalizationTable.locale_foreign_key => locale).first
             select{ |s| s.send(HasLocalizationTable.locale_foreign_key) == locale }.first

@@ -15,19 +15,26 @@ describe HasLocalizationTable do
   end
   
   let(:a) { Article.new(name: "Test", description: "Description") }
-  
-  it "should add validations if given required: true" do
-    Article.has_localization_table required: true
-    a = Article.new
-    refute a.valid?
-    a.errors[:localizations].wont_be_empty
-    
-    a = Article.new(description: "Wishing the world hello!")
-    s = a.localizations.first
-    refute s.valid?
-    s.errors[:name].wont_be_empty
+
+  describe 'when the required option is true' do
+    before { Article.has_localization_table required: true }
+
+    it "should add an error to the base class if a string is not given" do
+      Article.has_localization_table required: true
+      a = Article.new
+      refute a.valid?
+      a.errors.wont_be_empty
+    end
+
+    it 'should add an error to the association column if a string is not given' do
+      Article.has_localization_table required: true
+      a = Article.new(description: "Wishing the world hello!")
+      s = a.localizations.first
+      refute s.valid?
+      s.errors[:name].wont_be_empty
+    end
   end
-  
+
   it "should not add validations if given required: false" do
     Article.has_localization_table required: false
     a = Article.new
