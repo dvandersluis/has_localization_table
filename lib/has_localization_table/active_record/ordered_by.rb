@@ -21,7 +21,20 @@ module HasLocalizationTable
     private
       # Order records by localization value
       def ordered_by_localized_attribute(attribute, asc = true, locale = HasLocalizationTable.current_locale)
-        with_localizations.order("#{localization_class.table_name}.#{attribute} #{asc ? "ASC" : "DESC"}")
+        if locale != HasLocalizationTable.primary_locale
+          with_localizations.order(<<-EOQ)
+            COALESCE(
+              #{localization_class.table_name}.#{attribute}, (
+                SELECT #{attribute}
+                FROM #{localization_class.table_name}
+                WHERE #{reflect_on_association(localization_association_name).foreign_key} = #{self.table_name}.id
+                  AND #{HasLocalizationTable.locale_foreign_key} = #{HasLocalizationTable.primary_locale.id}
+              )
+            ) #{asc ? "ASC" : "DESC"}
+          EOQ
+        else
+          with_localizations.order("#{localization_class.table_name}.#{attribute} #{asc ? "ASC" : "DESC"}")
+        end
       end
     end
   end
