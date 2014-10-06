@@ -12,4 +12,16 @@ module HasLocalizationTable
       val
     end
   end
+
+  def self.with_options(options, &block)
+    # Ugly but we need to make sure we don't clobber the existing configuration
+    old_config = @config.dup
+    old_config.instance_variable_set('@_config', @config.config.dup)
+
+    @config.config.merge!(options.slice(*HasLocalizationTable.config.config.keys))
+
+    yield
+
+    @config = old_config
+  end
 end
