@@ -161,5 +161,11 @@ describe HasLocalizationTable do
       HasLocalizationTable.config.current_locale = es
       a.name(fallback: -> * { raise ArgumentError }).must_equal 'Test'
     end
+
+    it 'should use the fallback specified in configuration' do
+      HasLocalizationTable.with_options(fallback_locale: -> * { Locale.find(3) }) do
+        a.name.must_equal 'Test'
+      end
+    end
   end
 end

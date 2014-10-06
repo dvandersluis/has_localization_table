@@ -6,8 +6,9 @@ module HasLocalizationTable
 
         attribute_cache[attribute.to_sym][locale.id] ||= begin
           attr = localization_association.detect{ |a| a.send(HasLocalizationTable.locale_foreign_key) == locale.id }.send(attribute) rescue nil
-          if options[:fallback] && !attr
-            fallback = options[:fallback].respond_to?(:call) ? options[:fallback].call(self) : options[:fallback]
+          if options.fetch(:fallback, HasLocalizationTable.config.fallback_locale) && !attr
+            fallback = options.fetch(:fallback, HasLocalizationTable.config.fallback_locale)
+            fallback = fallback.call(self) if fallback.respond_to?(:call)
             attr = read_localized_attribute(attribute, fallback)
           end
           attr

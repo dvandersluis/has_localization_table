@@ -28,6 +28,7 @@ module HasLocalizationTable
     config_accessor :class_suffix
     config_accessor :default_association_name
     config_accessor :create_has_one_by_default # Should a has_one association be automatically created?
+    config_accessor :fallback_locale
   end
 
   # this is ugly. why can't we pass the default value to config_accessor...?
@@ -40,5 +41,6 @@ module HasLocalizationTable
     config.current_locale = ->{ config.locale_class.constantize.first }
     config.all_locales = ->{ config.locale_class.constantize.all }
     config.create_has_one_by_default = true
+    config.fallback_locale = nil
   end
 end
