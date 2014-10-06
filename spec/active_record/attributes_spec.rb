@@ -156,5 +156,10 @@ describe HasLocalizationTable do
     it 'should return a given locale when specified' do
       a.name(Locale.find(3)).must_equal 'Test'
     end
+
+    it 'should not evaluate a proc if the fallback is not required' do
+      HasLocalizationTable.config.current_locale = es
+      a.name(fallback: -> * { raise ArgumentError }).must_equal 'Test'
+    end
   end
 end
