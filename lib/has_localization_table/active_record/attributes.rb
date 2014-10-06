@@ -1,8 +1,17 @@
 module HasLocalizationTable
   module ActiveRecord
     module Attributes
-      def read_localized_attribute(attribute, locale = HasLocalizationTable.current_locale)
-        attribute_cache[attribute.to_sym][locale.id] ||= localization_association.detect{ |a| a.send(HasLocalizationTable.locale_foreign_key) == locale.id }.send(attribute) rescue nil
+      def read_localized_attribute(attribute, locale = HasLocalizationTable.current_locale, options = {})
+        locale ||= HasLocalizationTable.current_locale
+
+        attribute_cache[attribute.to_sym][locale.id] ||= begin
+          attr = localization_association.detect{ |a| a.send(HasLocalizationTable.locale_foreign_key) == locale.id }.send(attribute) rescue nil
+          if options[:fallback] && !attr
+            fallback = options[:fallback].respond_to?(:call) ? options[:fallback].call(self) : options[:fallback]
+            attr = read_localized_attribute(attribute, fallback)
+          end
+          attr
+        end
       end
       
       def write_localized_attribute(attribute, value, locale = HasLocalizationTable.current_locale)
@@ -22,7 +31,8 @@ module HasLocalizationTable
               # Try to load a string for the given locale
               # If that fails, try for the primary locale
               raise ArgumentError, "wrong number of arguments (#{args.size} for 0 or 1)" unless args.size.between?(0, 1)
-              return read_localized_attribute($1, *args) || read_localized_attribute($1, HasLocalizationTable.primary_locale)
+              options = args.extract_options!
+              return read_localized_attribute($1, args.first, options) || read_localized_attribute($1, HasLocalizationTable.primary_locale, options)
             else
               raise ArgumentError, "wrong number of arguments (#{args.size} for 1)" unless args.size == 1
               return write_localized_attribute($1, args.first)

@@ -135,4 +135,26 @@ describe HasLocalizationTable do
     aa.name.must_equal "French Name"
     aa.description.must_equal "French Description"
   end
+
+  describe 'when a fallback is provided' do
+    let(:es) { Locale.create!(name: 'Spanish') }
+
+    before do
+      HasLocalizationTable.config.current_locale = es
+      a.save!
+      HasLocalizationTable.config.current_locale = Locale.first
+    end
+
+    it "should return the fallback locale's string" do
+      a.name(fallback: Locale.find(3)).must_equal 'Test'
+    end
+
+    it "should evaluate a proc" do
+      a.name(fallback: -> * { Locale.find(3) }).must_equal 'Test'
+    end
+
+    it 'should return a given locale when specified' do
+      a.name(Locale.find(3)).must_equal 'Test'
+    end
+  end
 end
