@@ -15,8 +15,25 @@ describe HasLocalizationTable do
     end
 
     it 'should revert to the original option values after the block' do
-      HasLocalizationTable.with_options(locale_class: 'Language') {}
+      HasLocalizationTable.with_options(locale_class: 'Language') { }
       HasLocalizationTable.locale_class.must_equal 'Locale'
+    end
+
+    it 'should revert nil values' do
+      HasLocalizationTable.with_options(fallback_locale: -> { }) { }
+      HasLocalizationTable.fallback_locale.must_be_nil
+    end
+
+    it 'should revert values if an exception was raised in the block' do
+      begin
+        HasLocalizationTable.with_options(fallback_locale: -> * { }) do
+          raise 'error!'
+        end
+
+      rescue => e
+      end
+
+      HasLocalizationTable.config.fallback_locale.must_be_nil
     end
   end
 end

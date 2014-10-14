@@ -22,6 +22,7 @@ module HasLocalizationTable
 
     yield
 
+  ensure
     @config = old_config
   end
 end
