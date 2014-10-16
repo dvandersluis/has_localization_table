@@ -59,6 +59,8 @@ module HasLocalizationTable
       module InstanceMethods
         # Add localization objects for any available locale that doesn't have one 
         def build_missing_localizations!
+          return unless HasLocalizationTable.all_locales.any?
+
           locale_ids = HasLocalizationTable.all_locales.map(&:id)
           HasLocalizationTable.all_locales.each do |locale|
             unless localization_association.detect{ |str| str.send(HasLocalizationTable.locale_foreign_key) == locale.id }
