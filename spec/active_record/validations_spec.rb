@@ -35,6 +35,29 @@ describe HasLocalizationTable do
     end
   end
 
+  describe 'when the current locale is not the primary locale' do
+    before do
+      HasLocalizationTable.configure do |c|
+        c.current_locale = Locale.where(name: 'French').first
+      end
+
+      Article.has_localization_table required: true
+    end
+
+    it 'should not be valid if only the current language is provided' do
+      a = Article.new(name: "French Name", description: "French Description")
+      refute a.valid?
+    end
+
+    it 'should be valid if only the primary language is provided' do
+      a = Article.new
+      s = a.localizations.detect{ |l| l.locale_id == Locale.first.id }
+      s.name = "Name"
+      s.description = "Description"
+      assert a.valid?
+    end
+  end
+
   it "should not add validations if given required: false" do
     Article.has_localization_table required: false
     a = Article.new

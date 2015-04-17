@@ -7,7 +7,7 @@ module HasLocalizationTable
           obj = self
           localization_class.class_eval do
             validates attribute, presence: { message: :custom_this_field_is_required },
-              if: proc { |model| obj.name.constantize.localized_attribute_required?(attribute) && model.send(HasLocalizationTable.locale_foreign_key) == HasLocalizationTable.current_locale.id }
+              if: proc { |model| obj.name.constantize.localized_attribute_required?(attribute) && model.send(HasLocalizationTable.locale_foreign_key) == HasLocalizationTable.primary_locale.id }
           end
         end
         
