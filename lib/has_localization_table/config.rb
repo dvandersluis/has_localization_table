@@ -41,6 +41,6 @@ module HasLocalizationTable
     config.current_locale = ->{ config.locale_class.constantize.first }
     config.all_locales = ->{ config.locale_class.constantize.all }
     config.create_has_one_by_default = true
-    config.fallback_locale = nil
+    config.fallback_locale = -> * { HasLocalizationTable.primary_locale }
   end
 end

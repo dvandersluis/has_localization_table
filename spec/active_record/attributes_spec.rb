@@ -6,7 +6,7 @@ describe HasLocalizationTable do
     HasLocalizationTable.configure do |c|
       c.primary_locale = Locale.first 
       c.current_locale = Locale.first
-      c.all_locales = Locale.all
+      c.all_locales = -> { Locale.all }
     end
 
     Object.send(:remove_const, :Article) rescue nil
@@ -50,7 +50,7 @@ describe HasLocalizationTable do
   
   it "should use the current locale when setting" do
     a
-    
+
     HasLocalizationTable.configure do |c|
       c.current_locale = Locale.last
     end
@@ -145,16 +145,26 @@ describe HasLocalizationTable do
       HasLocalizationTable.config.current_locale = Locale.first
     end
 
-    it "should return the fallback locale's string" do
-      a.name(fallback: Locale.find(3)).must_equal 'Test'
+    it "should return the fallback locale's string when there isn't a string for the current locale" do
+      a.name(fallback: es).must_equal 'Test'
+    end
+
+    it "should return the fallback locale's string when the string for the current locale is blank" do
+      a.update_attributes!(name: '', description: 'Description')
+      a.name(fallback: es).must_equal 'Test'
+    end
+
+    it 'should return a blank string if neither locale has a string' do
+      HasLocalizationTable.with_options(current_locale: es) { a.update_attributes!(name: '') }
+      a.name(fallback: es).must_be_empty
     end
 
     it "should evaluate a proc" do
-      a.name(fallback: -> * { Locale.find(3) }).must_equal 'Test'
+      a.name(fallback: -> * { es }).must_equal 'Test'
     end
 
     it 'should return a given locale when specified' do
-      a.name(Locale.find(3)).must_equal 'Test'
+      a.name(es).must_equal 'Test'
     end
 
     it 'should not evaluate a proc if the fallback is not required' do
@@ -163,8 +173,49 @@ describe HasLocalizationTable do
     end
 
     it 'should use the fallback specified in configuration' do
-      HasLocalizationTable.with_options(fallback_locale: -> * { Locale.find(3) }) do
+      HasLocalizationTable.with_options(fallback_locale: -> * { es }) do
         a.name.must_equal 'Test'
+      end
+    end
+  end
+
+  describe 'when a fallback is not provided' do
+    describe 'when the primary locale is the current locale' do
+      it 'should return a blank string when the localization is nil' do
+        a = Article.new(name: nil)
+        a.name.must_be_empty
+      end
+
+      it 'should return a blank string if there is no localization' do
+        a = Article.create!
+        a.name.must_be_empty
+      end
+
+      it 'should return a blank string if the localization is blank' do
+        a.update_attributes!(name: '')
+        a.name.must_be_empty
+      end
+    end
+
+    describe 'when the primary locale is different than the current locale' do
+      let(:es) { Locale.create!(name: 'Spanish') }
+
+      before do
+        HasLocalizationTable.config.primary_locale = HasLocalizationTable.config.current_locale = es
+
+        a.save!
+
+        HasLocalizationTable.config.current_locale = Locale.first
+        a.update_attributes!(name: '', description: 'Description')
+      end
+
+      it 'should return the primary locale string if the current locale string is blank' do
+        a.name.must_equal 'Test'
+      end
+
+      it 'should return a blank string if neither locale has a string' do
+        HasLocalizationTable.with_options(current_locale: HasLocalizationTable.primary_locale) { a.update_attributes!(name: '') }
+        a.name.must_be_empty
       end
     end
   end

@@ -21,7 +21,7 @@ describe HasLocalizationTable do
 
     it 'should revert nil values' do
       HasLocalizationTable.with_options(fallback_locale: -> { }) { }
-      HasLocalizationTable.fallback_locale.must_be_nil
+      HasLocalizationTable.fallback_locale.must_equal HasLocalizationTable.primary_locale
     end
 
     it 'should revert values if an exception was raised in the block' do
@@ -33,7 +33,7 @@ describe HasLocalizationTable do
       rescue => e
       end
 
-      HasLocalizationTable.config.fallback_locale.must_be_nil
+      HasLocalizationTable.fallback_locale.must_equal HasLocalizationTable.primary_locale
     end
   end
 end

@@ -5,12 +5,17 @@ module HasLocalizationTable
         locale ||= HasLocalizationTable.current_locale
 
         attribute_cache[attribute.to_sym][locale.id] ||= begin
-          attr = localization_association.detect{ |a| a.send(HasLocalizationTable.locale_foreign_key) == locale.id }.send(attribute) rescue nil
-          if options.fetch(:fallback, HasLocalizationTable.config.fallback_locale) && !attr
-            fallback = options.fetch(:fallback, HasLocalizationTable.config.fallback_locale)
+          attr = localization_association.detect{ |a| a.send(HasLocalizationTable.locale_foreign_key) == locale.id }.send(attribute) rescue ''
+          attr ||= '' # if the attribute somehow is nil, change it to a blank string so we're always dealing with strings
+
+          fallback = options.fetch(:fallback, HasLocalizationTable.config.fallback_locale)
+
+          if fallback && attr.blank?
             fallback = fallback.call(self) if fallback.respond_to?(:call)
-            attr = read_localized_attribute(attribute, fallback)
+
+            return read_localized_attribute(attribute, fallback) unless fallback == locale
           end
+
           attr
         end
       end
@@ -50,6 +55,7 @@ module HasLocalizationTable
       end
     
     private
+
       def attribute_cache
         @localization_attribute_cache ||= localized_attributes.inject({}) { |memo, attr| memo[attr] = {}; memo }
       end
