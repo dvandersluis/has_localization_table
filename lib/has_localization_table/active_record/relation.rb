@@ -1,7 +1,7 @@
 module HasLocalizationTable
   module ActiveRecord
     module Relation
-      RESERVED_KEYS = [:association_name, :required, :optional, :dependent, :has_one, :initialize]
+      RESERVED_KEYS = [:association_name, :required, :optional, :dependent, :has_one, :initialize, :include]
 
       def self.extended(klass)
         klass.send(:include, InstanceMethods)
@@ -53,6 +53,10 @@ module HasLocalizationTable
             # where(HasLocalizationTable.locale_foreign_key => locale).first
             select{ |s| s.send(HasLocalizationTable.locale_foreign_key) == locale }.first
           end
+        end
+
+        if localization_table_options.fetch(:include, false)
+          self.default_scope -> { includes(localization_association_name) }
         end
       end
 

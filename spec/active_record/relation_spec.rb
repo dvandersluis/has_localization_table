@@ -5,7 +5,7 @@ describe HasLocalizationTable do
   before do
     # Configure HLT
     HasLocalizationTable.configure do |c|
-      c.primary_locale = Locale.first 
+      c.primary_locale = Locale.first
       c.current_locale = Locale.first
       c.all_locales = Locale.all
     end
@@ -89,6 +89,28 @@ describe HasLocalizationTable do
 
     HasLocalizationTable.stub :current_locale, locale do
       conditions.call.must_equal "article_localizations.locale_id = 3"
+    end
+  end
+
+  it 'should add a default scope if include: true is given' do
+    Article.stub :localization_table_options, { include: true } do
+      Article.default_scopes.must_be_empty
+      Article.send(:extend, HasLocalizationTable::ActiveRecord::Relation)
+      Article.default_scopes.size.must_equal(1)
+    end
+  end
+
+  it 'should not add a default scope if include: false is given' do
+    Article.stub :localization_table_options, { include: false } do
+      Article.send(:extend, HasLocalizationTable::ActiveRecord::Relation)
+      Article.default_scopes.must_be_empty
+    end
+  end
+
+  it 'should not add a default scope if include: is not given' do
+    Article.stub :localization_table_options, { } do
+      Article.send(:extend, HasLocalizationTable::ActiveRecord::Relation)
+      Article.default_scopes.must_be_empty
     end
   end
 end
