@@ -16,34 +16,6 @@ describe HasLocalizationTable do
 
   let(:article) { Article.create!(name: "Test", description: "Description") }
 
-  it 'should initialize the localizations association on initialize' do
-    a = Article.new
-    a.localizations.wont_be_empty
-  end
-
-  it 'should initialize the localizations association on initialize for an existing object' do
-    a = Article.find(article.id)
-    a.localizations.wont_be_empty
-  end
-
-  it 'should not initialize the association on initialize if initialize: false is given in config' do
-    Article.has_localization_table initialize: false
-    a = Article.new
-    a.localizations.must_be_empty
-  end
-
-  it 'should not initialize the association for an existing object if initialize: false is given in config' do
-    Article.has_localization_table initialize: false
-    a = Article.find(article.id)
-    refute(a.localizations.loaded?)
-  end
-
-  it 'should not initialize the association on initialize if include: true is given in config' do
-    Article.has_localization_table include: true
-    a = Article.new
-    a.localizations.must_be_empty
-  end
-
   it 'should load associations if include: true is given' do
     Article.has_localization_table include: true
     assert Article.find(article.id).localizations.loaded?

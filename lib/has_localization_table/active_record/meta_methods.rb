@@ -38,8 +38,11 @@ module HasLocalizationTable
       module InstanceMethods
         # Helper method for getting the localization association without having to look up the name each time
         def localization_association
-          association_name = localization_table_options[:association_name]
-          send(association_name)
+          send(localization_association_name)
+        end
+
+        def localization_association_name
+          localization_table_options[:association_name]
         end
 
         def localized_attributes
