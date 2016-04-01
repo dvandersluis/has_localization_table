@@ -27,7 +27,10 @@ module HasLocalizationTable
         end
 
         def changed?(attr, locale)
-          klass.localization_for(locale).send(attr) != self[attr.to_sym][locale.id]
+          localization = klass.localization_for(locale)
+          return false unless localization
+
+          localization.send(attr) != self[attr.to_sym][locale.id]
         end
       end
     end

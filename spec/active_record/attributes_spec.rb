@@ -266,6 +266,20 @@ describe HasLocalizationTable do
     a.localizations(true).wont_be_empty
   end
 
+  it 'should return nil when getting a attribute that has not been initialized' do
+    Article.has_localization_table
+
+    a = nil
+
+    HasLocalizationTable.with_options(all_locales: [Locale.first]) do
+      a = Article.new(name: 'Name')
+
+      HasLocalizationTable.with_options(current_locale: Locale.last) do
+        a.name(Locale.first).must_equal 'Name'
+      end
+    end
+  end
+
   it 'should update the main model when the string is directly updated' do
     Article.has_localization_table
     a = Article.new
