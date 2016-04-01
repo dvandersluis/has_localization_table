@@ -286,4 +286,17 @@ describe HasLocalizationTable do
     string.name = 'Another Name'
     a.name.must_equal 'Another Name'
   end
+
+  it 'should report if the attribute changed' do
+    Article.has_localization_table
+    a = Article.create!(name: 'Name')
+    a.name = 'New Name'
+    assert a.name_changed?
+  end
+
+  it 'should not report that the attribute has changed if it has not' do
+    Article.has_localization_table
+    a = Article.create!(name: 'Name')
+    refute a.name_changed?
+  end
 end

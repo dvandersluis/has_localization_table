@@ -1,7 +1,7 @@
 module HasLocalizationTable
   module ActiveRecord
     module Attributes
-      LOCALIZED_ATTRIBUTE_REGEX = /\A(?<name>[a-z0-9_]+)(?<suffix>=)?\Z/i
+      LOCALIZED_ATTRIBUTE_REGEX = /\A(?<name>[a-z0-9_]+)(?<suffix>=|_changed\?)?\Z/i
 
       autoload :Cache, 'has_localization_table/active_record/attributes/cache'
 
@@ -48,6 +48,8 @@ module HasLocalizationTable
             elsif match[:suffix] == '='
               raise ArgumentError, "wrong number of arguments (#{args.size} for 1)" unless args.size == 1
               return write_localized_attribute($1, args.first)
+            elsif current_localization.respond_to?(name).inspect
+              return localized_attribute_changed?(name.to_s.sub(/_changed\?/, ''))
             end
           end
         end
@@ -69,6 +71,10 @@ module HasLocalizationTable
 
       def localized_attribute_cache
         @localization_attribute_cache ||= Cache.new(self)
+      end
+
+      def localized_attribute_changed?(attr)
+        current_localization.send("#{attr}_changed?")
       end
     end
   end
