@@ -1,5 +1,8 @@
 # HasLocalizationTable
 
+[![Gem Version](https://badge.fury.io/rb/has_localization_table.svg)](https://badge.fury.io/rb/has_localization_table)
+[![Build Status](https://travis-ci.org/dvandersluis/has_localization_table.svg?branch=master)](https://travis-ci.org/dvandersluis/has_localization_table)
+
 ActiveRecord plugin which adds setup and convenience methods for working with a relational localization table for user-driven data.
 
 Adds accessors to retrieve localized attributes using the current locale, in order to avoid having to collect the correct object each time a value is needed. Localized attribute values are also cached for the current locale.
