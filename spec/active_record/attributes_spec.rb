@@ -95,7 +95,7 @@ describe HasLocalizationTable do
 
   it "should return the correct locale's value even if the cache is empty" do
     Locale.class_eval { cattr_accessor :current }
-    Locale.current = eng = Locale.find_by_name("English")
+    Locale.current = Locale.find_by_name("English")
     fre = Locale.find_by_name("French")
 
     HasLocalizationTable.configure do |c|
@@ -127,7 +127,7 @@ describe HasLocalizationTable do
     Article.has_localization_table
 
     aa = Article.create!(name: "Name", description: "Description")
-    l = ArticleLocalization.create!(article: aa, locale: fre, name: "French Name", description: "French Description")
+    ArticleLocalization.create!(article: aa, locale: fre, name: "French Name", description: "French Description")
 
     aa.reload
 

@@ -2,7 +2,7 @@
 ActiveRecord::Base.establish_connection adapter: "sqlite3", database: ":memory:"
 ActiveRecord::Migration.tap do |m|
   m.create_table :articles do |t|
-    t.timestamps
+    t.timestamps null: false
   end
 
   m.create_table :locales do |t|

@@ -30,7 +30,7 @@ describe HasLocalizationTable do
           raise 'error!'
         end
 
-      rescue => e
+      rescue
       end
 
       HasLocalizationTable.fallback_locale.must_equal HasLocalizationTable.primary_locale
