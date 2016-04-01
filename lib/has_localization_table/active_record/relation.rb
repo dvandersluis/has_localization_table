@@ -29,7 +29,7 @@ module HasLocalizationTable
         # if caller explicitly asked not to create a has_one association, there's nothing more to do
         return unless localization_table_options.fetch(:has_one, true)
 
-        create_has_one_association if localization_table_options[:has_one] or HasLocalizationTable.create_has_one_by_default
+        create_has_one_association if localization_table_options[:has_one] || HasLocalizationTable.create_has_one_by_default
       end
 
       # Collect the localization for the current locale
@@ -40,7 +40,7 @@ module HasLocalizationTable
         association_name = :localization if localized_attributes.include?(association_name)
 
         has_one_options = localization_table_options.except(*RESERVED_KEYS).
-          merge(conditions: -> { "#{table_name}.#{foreign_key} = #{HasLocalizationTable.current_locale.id}" })
+          merge(conditions: -> * { "#{table_name}.#{foreign_key} = #{HasLocalizationTable.current_locale.id}" })
 
         self.has_one association_name, has_one_options
         self.has_one(:localization, has_one_options) unless association_name == :localization
@@ -93,7 +93,7 @@ module HasLocalizationTable
 
         # Remove localization objects that are not filled in
         def reject_empty_localizations!
-          localization_association.reject! { |l| !l.persisted? and localized_attributes.all?{ |attr| l.send(attr).blank? } }
+          localization_association.reject! { |l| !l.persisted? && localized_attributes.all?{ |attr| l.send(attr).blank? } }
         end
       end
     end
