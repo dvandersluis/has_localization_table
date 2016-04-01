@@ -52,6 +52,14 @@ module HasLocalizationTable
         def localization_table_options
           self.class.localization_table_options
         end
+
+        def localization_for(locale)
+          localization_association.detect{ |a| a.send(HasLocalizationTable.locale_foreign_key) == locale.id }
+        end
+
+        def current_localization
+          localization_for(HasLocalizationTable.current_locale)
+        end
       end
     end
   end

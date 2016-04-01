@@ -105,7 +105,7 @@ describe HasLocalizationTable do
     a.localizations.last.attributes = { name: "French Name", description: "French Description" }
 
     # Force empty cache
-    a.instance_variable_set(:@localization_attribute_cache, { name: {}, description: {} })
+    a.reset_localized_attribute_cache
 
     Locale.current = fre
     a.name.must_equal "French Name"
@@ -264,5 +264,26 @@ describe HasLocalizationTable do
     Article.has_localization_table build_missing: false
     a = Article.new
     a.localizations(true).wont_be_empty
+  end
+
+  it 'should update the main model when the string is directly updated' do
+    Article.has_localization_table
+    a = Article.new
+
+    string = a.localizations.first
+    string.name = 'New Name'
+    a.name.must_equal 'New Name'
+  end
+
+  it 'should allow successive changes' do
+    Article.has_localization_table
+    a = Article.new
+
+    string = a.localizations.first
+    string.name = 'New Name'
+    a.name.must_equal 'New Name'
+
+    string.name = 'Another Name'
+    a.name.must_equal 'Another Name'
   end
 end
